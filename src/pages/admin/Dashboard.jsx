@@ -42,12 +42,14 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col14"];
+  // Updated DISPLAY_COLUMNS to include col13
+  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col13", "col14"];
   const ALLOWED_COLUMNS = [
     // "col0",
     // "col1",
     "col2",
     "col3",
+    "col13",
     "col4",
     "col5",
     "col6",
@@ -82,6 +84,8 @@ const AdminDashboard = () => {
 
       // Define which columns should always be treated as progress columns
       const PROGRESS_COLUMNS = ["col5", "col6", "col10", "col11"];
+      // Define which columns contain images
+      const IMAGE_COLUMNS = ["col13"];
 
       const headers = data.table.cols.map((col, colIndex) => {
         const columnId = `col${colIndex}`;
@@ -92,10 +96,14 @@ const AdminDashboard = () => {
           PROGRESS_COLUMNS.includes(columnId) ||
           (typeof sampleValue === "string" && sampleValue.includes("%"));
 
+        // Check if column contains images
+        const isImageColumn = IMAGE_COLUMNS.includes(columnId);
+
         return {
           id: columnId,
           label: col.label || `Column ${colIndex + 1}`,
           isProgress: isProgressColumn,
+          isImage: isImageColumn,
         };
       });
 
@@ -123,14 +131,21 @@ const AdminDashboard = () => {
       setIsLoading(false);
     }
   };
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
   const filteredDashboard = dashboardTasks.filter((item) => {
     const term = searchTerm.toLowerCase();
 
     const matchesSearchTerm = DISPLAY_COLUMNS.some((colId) => {
       const value = item[colId];
+      // For image columns, we might want to skip text search or handle differently
+      if (colId === "col13") {
+        // You can customize this logic based on how you want to handle image search
+        return true; // Always include items with images, or implement custom logic
+      }
       return value && String(value).toLowerCase().includes(term);
     });
 
