@@ -236,7 +236,7 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
     const value = item[header.id];
 
     if (header.isImage) {
-      const userName = item.col2 || item.col3 || "User";
+      const userName = item.col3 || item.col4 || "User";
       console.log(`🔍 Rendering image for ${header.id}:`, value);
 
       return (
@@ -358,8 +358,8 @@ EmployeesTable.propTypes = {
     PropTypes.shape({
       _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-      col2: PropTypes.string,
       col3: PropTypes.string,
+      col4: PropTypes.string,
     })
   ).isRequired,
   isCompact: PropTypes.bool,

@@ -43,13 +43,11 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
 
   // Updated DISPLAY_COLUMNS to include col13
-  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col13", "col14"];
+  const DISPLAY_COLUMNS = ["col3", "col4", "col5", "col14", "col15"];
   const ALLOWED_COLUMNS = [
     // "col0",
-    // "col1",
     "col2",
     "col3",
-    "col13",
     "col4",
     "col5",
     "col6",
@@ -59,6 +57,7 @@ const AdminDashboard = () => {
     "col10",
     "col11",
     "col12",
+    "col13",
   ];
 
   const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
@@ -83,10 +82,9 @@ const AdminDashboard = () => {
         throw new Error("No table data found");
 
       // Define which columns should always be treated as progress columns
-      const PROGRESS_COLUMNS = ["col5", "col6", "col10", "col11"];
+      const PROGRESS_COLUMNS = ["col6", "col7", "col11", "col12"];
       // Define which columns contain images
-      const IMAGE_COLUMNS = ["col13"];
-
+      const IMAGE_COLUMNS = ["col2"];
       const headers = data.table.cols.map((col, colIndex) => {
         const columnId = `col${colIndex}`;
         const sampleValue = data.table.rows?.[0]?.c?.[colIndex]?.v ?? "";
