@@ -16,6 +16,7 @@ import HalfCircleChart from "../../components/charts/HalfCircleChart";
 import HorizontalBarChart from "../../components/charts/HorizontalBarChart";
 import VerticalBarChart from "../../components/charts/VerticalBarChart";
 import { generateDashboardPDF } from "../../utils/pdfGenerator";
+import DepartmentScores from "../../components/charts/DepartmentScores";
 
 /**
  * Admin Dashboard component that displays various data visualizations and tables
@@ -85,6 +86,7 @@ const AdminDashboard = () => {
       const PROGRESS_COLUMNS = ["col6", "col7", "col11", "col12"];
       // Define which columns contain images
       const IMAGE_COLUMNS = ["col2"];
+      console.log(IMAGE_COLUMNS, "IMAGE_COLUMNS");
       const headers = data.table.cols.map((col, colIndex) => {
         const columnId = `col${colIndex}`;
         const sampleValue = data.table.rows?.[0]?.c?.[colIndex]?.v ?? "";
@@ -267,7 +269,7 @@ const AdminDashboard = () => {
           Department Scores
         </h2>
         <div className="h-80">
-          <VerticalBarChart
+          <DepartmentScores
             data={departmentScoresData}
             labels={departmentScoresLabels}
             colors={["#8b5cf6", "#a78bfa", "#c4b5fd", "#ddd6fe", "#ede9fe"]}

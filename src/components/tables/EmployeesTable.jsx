@@ -36,7 +36,7 @@ const ImgWithFallback = ({ src, alt, name, fallbackElement, className }) => {
 
   useEffect(() => {
     if (!src || src.trim() === "") {
-      console.log("No image URL provided");
+      // console.log("No image URL provided");
       setLoadFailed(true);
       return;
     }
@@ -58,11 +58,11 @@ const ImgWithFallback = ({ src, alt, name, fallbackElement, className }) => {
     const nextAttempt = attempts + 1;
 
     if (nextAttempt < urls.length) {
-      console.log(`Trying alternative URL ${nextAttempt + 1}/${urls.length}`);
+      // console.log(`Trying alternative URL ${nextAttempt + 1}/${urls.length}`);
       setImgSrc(urls[nextAttempt]);
       setAttempts(nextAttempt);
     } else {
-      console.log("All image loading attempts failed");
+      // console.log("All image loading attempts failed");
       setLoadFailed(true);
     }
   };
@@ -129,12 +129,12 @@ const convertGoogleDriveImageUrl = (url) => {
       const fileId = match[1];
       // Use thumbnail API which is more reliable for image display
       const finalUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
-      console.log("✅ Converted Google Drive URL:", finalUrl);
+      // console.log("✅ Converted Google Drive URL:", finalUrl);
       return finalUrl;
     }
   }
 
-  console.warn("⚠️ Could not convert Google Drive URL:", url);
+  // console.warn("⚠️ Could not convert Google Drive URL:", url);
   return url;
 };
 
@@ -193,7 +193,7 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
   useEffect(() => {
     const processData = () => {
       return filterTasks.map((item, index) => {
-        console.log(`🔎 Row ${index + 1} data:`, item);
+        // console.log(`🔎 Row ${index + 1} data:`, item);
 
         const imageHeader = dynamicHeaders.find((header) => header.isImage);
         if (!imageHeader) return item;
@@ -201,7 +201,7 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
         // Get the image URL directly from the item object using the header ID
         const driveImageUrl = item[imageHeader.id];
 
-        console.log(`📷 Raw image URL for ${imageHeader.id}:`, driveImageUrl);
+        // console.log(`📷 Raw image URL for ${imageHeader.id}:`, driveImageUrl);
 
         if (
           driveImageUrl &&

@@ -1,81 +1,60 @@
 "use client";
 import TasksTable from "../../components/tables/TasksTable";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast, Toaster } from "react-hot-toast";
 
 const AdminPendingTasks = () => {
   const [pendingTasks, setPendingTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [col2Filter, setCol2Filter] = useState("");
-  const [col4Filter, setCol4Filter] = useState("");
+  const [filterType, setFilterType] = useState(""); // col2 or col4
+  const [filterValue, setFilterValue] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col14"];
+  const filterRef = useRef(null);
 
+  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col14"];
   const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
 
+  // Fetch tasks
   const fetchPendingData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-
       const response = await fetch(
         `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=data`
       );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch pending data: ${response.status}`);
-      }
-
       const text = await response.text();
       const jsonStart = text.indexOf("{");
       const jsonEnd = text.lastIndexOf("}");
-
-      if (jsonStart === -1 || jsonEnd === -1) {
-        throw new Error("Invalid response format from pending sheet");
-      }
-
       const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
-
-      if (!data.table || !data.table.rows) {
-        throw new Error("No table data found in pending sheet");
-      }
-
       const fmsItems = data.table.rows.map((row, rowIndex) => {
         const itemObj = {
           _id: `${rowIndex}-${Math.random().toString(36).substr(2, 9)}`,
           _rowIndex: rowIndex + 1,
         };
-
         if (row.c) {
           row.c.forEach((cell, i) => {
             itemObj[`col${i}`] = cell?.v ?? cell?.f ?? "";
           });
         }
-
         return itemObj;
       });
 
-      const filteredItems = fmsItems.filter((item) => {
-        return DISPLAY_COLUMNS.some((colId) => {
+      const filteredItems = fmsItems.filter((item) =>
+        DISPLAY_COLUMNS.some((colId) => {
           const value = item[colId];
           return value && String(value).trim() !== "";
-        });
-      });
+        })
+      );
 
       setPendingTasks(filteredItems);
-      toast.success(`Fetched ${filteredItems.length} pending tasks`, {
-        duration: 3000,
-        position: "top-right",
-      });
+      toast.success(`Fetched ${filteredItems.length} pending tasks`);
     } catch (err) {
       console.error("❌ Error fetching pending data:", err);
       setError(err.message);
-      toast.error(`Failed to load pending data: ${err.message}`, {
-        duration: 4000,
-        position: "top-right",
-      });
+      toast.error(`Failed to load: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -85,111 +64,141 @@ const AdminPendingTasks = () => {
     fetchPendingData();
   }, []);
 
+  // Outside click to close dialog
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setIsDialogOpen(false);
+      }
+    };
+
+    if (isDialogOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isDialogOpen]);
+
   const filteredPendingTasks = pendingTasks.filter((item) => {
     const term = searchTerm.toLowerCase();
-    const col2Val = String(item.col2 || "").toLowerCase();
-    const col4Val = String(item.col4 || "").toLowerCase();
 
-    const matchesSearchTerm = DISPLAY_COLUMNS.some((colId) => {
-      const value = item[colId];
-      return value && String(value).toLowerCase().includes(term);
-    });
+    const matchesSearch = DISPLAY_COLUMNS.some((colId) =>
+      String(item[colId] || "")
+        .toLowerCase()
+        .includes(term)
+    );
 
-    const matchesCol2 = col2Filter
-      ? col2Val.includes(col2Filter.toLowerCase())
+    const filterColumn = filterType === "col2" ? item.col2 : item.col4;
+    const matchesFilter = filterValue
+      ? String(filterColumn || "")
+          .toLowerCase()
+          .includes(filterValue.toLowerCase())
       : true;
 
-    const matchesCol4 = col4Filter
-      ? col4Val.includes(col4Filter.toLowerCase())
-      : true;
-
-    return matchesSearchTerm && matchesCol2 && matchesCol4;
+    return matchesSearch && matchesFilter;
   });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-slate-600 font-medium">Loading pending tasks...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center p-6 max-w-md mx-auto">
-          <div className="text-red-500 mb-4">
-            <svg
-              className="w-12 h-12 mx-auto"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Error Loading Data
-          </h3>
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={fetchPendingData}
-            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
       <Toaster />
+
+      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Pending Tasks</h1>
-        <div className="text-sm bg-yellow-100 text-yellow-800 font-medium px-2.5 py-0.5 rounded-full">
+        <div className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
           {filteredPendingTasks.length} Pending Task
           {filteredPendingTasks.length !== 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-wrap gap-4">
-          <input
-            type="text"
-            placeholder="Search tasks..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 min-w-[200px] px-3 py-2 border rounded-lg focus:ring-green-500"
-          />
-          <input
-            type="text"
-            placeholder="Filter by Fms Name"
-            value={col2Filter}
-            onChange={(e) => setCol2Filter(e.target.value)}
-            className="min-w-[150px] px-3 py-2 border rounded-lg focus:ring-green-500"
-          />
-          <input
-            type="text"
-            placeholder="Filter by Person Name"
-            value={col4Filter}
-            onChange={(e) => setCol4Filter(e.target.value)}
-            className="min-w-[150px] px-3 py-2 border rounded-lg focus:ring-green-500"
-          />
+      {/* Search + Filter */}
+      <div className="flex justify-between items-center bg-white p-4 rounded border relative">
+        <input
+          type="text"
+          placeholder="Search..."
+          className="px-3 py-2 border rounded-md w-full max-w-xs focus:ring-green-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        <div className="relative ml-4" ref={filterRef}>
+          <button
+            onClick={() => setIsDialogOpen((prev) => !prev)}
+            className="px-10 py-2 border bg-white-600 text-black rounded hover:bg-grey-700"
+          >
+            Filter
+          </button>
+
+          {isDialogOpen && (
+            <div className="absolute right-0 top-12 bg-white border shadow-lg rounded-lg w-72 p-4 z-50">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                Filter Tasks
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="font-medium text-gray-700 block mb-1">
+                    Filter Column
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="filterType"
+                        value="col2"
+                        checked={filterType === "col2"}
+                        onChange={() => setFilterType("col2")}
+                      />
+                      FMS Name (Col 2)
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="filterType"
+                        value="col4"
+                        checked={filterType === "col4"}
+                        onChange={() => setFilterType("col4")}
+                      />
+                      Person Name (Col 4)
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-700 mb-1">
+                    Filter Value
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter filter value"
+                    value={filterValue}
+                    onChange={(e) => setFilterValue(e.target.value)}
+                    className="w-full border px-3 py-2 rounded"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    onClick={() => setIsDialogOpen(false)}
+                    className="px-4 py-2 border rounded hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setIsDialogOpen(false)}
+                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Table */}
+      {/* Tasks Table */}
       {filteredPendingTasks.length > 0 ? (
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <div className="mb-4">
@@ -206,31 +215,7 @@ const AdminPendingTasks = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg border shadow-sm p-6 text-center">
-          <div className="py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
-              <svg
-                className="w-8 h-8"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">
-              No Pending Tasks Found
-            </h3>
-            <p className="text-gray-500">
-              {pendingTasks.length === 0
-                ? "No data available or all tasks are completed."
-                : "No tasks match your current filters."}
-            </p>
-          </div>
+          <p className="text-gray-500">No tasks match your current filters.</p>
         </div>
       )}
     </div>
