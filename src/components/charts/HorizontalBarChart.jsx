@@ -51,7 +51,8 @@ const HorizontalBarChart = ({
       },
     ],
   });
-  const [nameMap, setNameMap] = useState({}); // To store names from column E
+  const [nameMap, setNameMap] = useState({});
+  const [top5Info, setTop5Info] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,12 +68,12 @@ const HorizontalBarChart = ({
 
         if (data?.table?.rows) {
           const combinedData = new Map();
-          const nameMapping = {}; // To store mapping of labels to names from column E
+          const nameMapping = {};
 
           data.table.rows.forEach((row) => {
-            const columnO = row.c?.[14]?.v; // Column O - Label
-            const columnK = row.c?.[10]?.v; // Column K - Value
-            const columnE = row.c?.[4]?.v; // Column E - Name
+            const columnO = row.c?.[14]?.v;
+            const columnK = row.c?.[10]?.v;
+            const columnE = row.c?.[4]?.v;
 
             if (!columnO || !columnK) return;
 
@@ -91,7 +92,6 @@ const HorizontalBarChart = ({
               (combinedData.get(label) || 0) + cleanedValue
             );
 
-            // Store the name from column E if it exists
             if (columnE && !nameMapping[label]) {
               nameMapping[label] = String(columnE).trim();
             }
@@ -103,7 +103,16 @@ const HorizontalBarChart = ({
           const labels = sortedData.map(([label]) => label);
           const values = sortedData.map(([, value]) => Math.round(value));
 
-          setNameMap(nameMapping); // Store the name mapping
+          setNameMap(nameMapping);
+
+          // Save top 5 info
+          const top5 = sortedData.slice(0, 5).map(([label, value], index) => ({
+            label,
+            value,
+            name: nameMapping[label] || "No name",
+            color: colors[index % colors.length],
+          }));
+          setTop5Info(top5);
 
           setChartData({
             labels,
@@ -178,10 +187,6 @@ const HorizontalBarChart = ({
               `Value: ${context.raw.toLocaleString()}`,
             ];
           },
-          afterLabel: function (context) {
-            // You can add additional information here if needed
-            return `Category: ${context.label}`;
-          },
         },
       },
     },
@@ -223,7 +228,7 @@ const HorizontalBarChart = ({
         <h3 className="text-lg font-semibold text-gray-800 mb-3">{title}</h3>
       )}
 
-      <div className="overflow-y-auto max-h-56 border rounded-lg bg-gray-50">
+      <div className="overflow-y-auto max-h-36 border rounded-lg bg-gray-50">
         <div style={{ height: `${chartHeight}px`, minHeight: "150px" }}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -239,9 +244,30 @@ const HorizontalBarChart = ({
       </div>
 
       {!isLoading && chartData.labels.length > 0 && (
-        <div className="mt-3 text-xs text-gray-500">
-          Showing {chartData.labels.length} items
-        </div>
+        <>
+          <div className="mt-3 text-xs text-gray-500">
+            Showing {chartData.labels.length} items
+          </div>
+
+          {/* 👇 Top 5 Names Display */}
+          <div className="mt-4">
+            <h4 className="text-sm font-medium text-gray-700 mb-1">
+              Top 5 Names:
+            </h4>
+            <ul className="text-sm space-y-1">
+              {top5Info.map((item, index) => (
+                <li key={index} className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  ></div>
+                  <span className="text-gray-700">{item.name}</span>
+                  <span className="text-gray-400">({item.value})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
       )}
     </div>
   );

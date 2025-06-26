@@ -1,23 +1,19 @@
 "use client";
 import TasksTable from "../../components/tables/TasksTable";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 
 const AdminPendingTasks = () => {
   const [pendingTasks, setPendingTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState(""); // col2 or col4
+  const [filterType, setFilterType] = useState("col4"); // Default to person name
   const [filterValue, setFilterValue] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const filterRef = useRef(null);
 
   const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col14"];
   const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
 
-  // Fetch tasks
   const fetchPendingData = async () => {
     try {
       setIsLoading(true);
@@ -29,6 +25,7 @@ const AdminPendingTasks = () => {
       const jsonStart = text.indexOf("{");
       const jsonEnd = text.lastIndexOf("}");
       const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+
       const fmsItems = data.table.rows.map((row, rowIndex) => {
         const itemObj = {
           _id: `${rowIndex}-${Math.random().toString(36).substr(2, 9)}`,
@@ -64,41 +61,37 @@ const AdminPendingTasks = () => {
     fetchPendingData();
   }, []);
 
-  // Outside click to close dialog
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        setIsDialogOpen(false);
-      }
-    };
+  // Get unique values for dropdown based on selected filter type
+  const getUniqueValues = (columnKey) => {
+    const values = pendingTasks
+      .map((item) => String(item[columnKey] || "").trim())
+      .filter((value) => value !== "")
+      .filter((value, index, self) => self.indexOf(value) === index)
+      .sort();
+    return values;
+  };
 
-    if (isDialogOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isDialogOpen]);
-
-  const filteredPendingTasks = pendingTasks.filter((item) => {
+  const filteredTasks = pendingTasks.filter((item) => {
     const term = searchTerm.toLowerCase();
-
     const matchesSearch = DISPLAY_COLUMNS.some((colId) =>
       String(item[colId] || "")
         .toLowerCase()
         .includes(term)
     );
-
-    const filterColumn = filterType === "col2" ? item.col2 : item.col4;
     const matchesFilter = filterValue
-      ? String(filterColumn || "")
-          .toLowerCase()
-          .includes(filterValue.toLowerCase())
+      ? String(item[filterType] || "").trim() === filterValue
       : true;
-
     return matchesSearch && matchesFilter;
   });
+
+  // Show all columns when no specific filter is selected, otherwise show filtered column
+  const visibleColumns = filterValue ? [filterType] : DISPLAY_COLUMNS;
+
+  // Reset other filter when one is selected
+  const handleFilterChange = (newFilterType, newFilterValue) => {
+    setFilterType(newFilterType);
+    setFilterValue(newFilterValue);
+  };
 
   return (
     <div className="space-y-6">
@@ -108,109 +101,100 @@ const AdminPendingTasks = () => {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Pending Tasks</h1>
         <div className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
-          {filteredPendingTasks.length} Pending Task
-          {filteredPendingTasks.length !== 1 ? "s" : ""}
+          {filteredTasks.length} Pending Task
+          {filteredTasks.length !== 1 ? "s" : ""}
         </div>
       </div>
 
-      {/* Search + Filter */}
-      <div className="flex justify-between items-center bg-white p-4 rounded border relative">
-        <input
-          type="text"
-          placeholder="Search..."
-          className="px-3 py-2 border rounded-md w-full max-w-xs focus:ring-green-500"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      {/* Search + Inline Filter */}
+      <div className="bg-white p-4 rounded border space-y-4">
+        {/* Filter Options with Dropdowns */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Search Input */}
+          <input
+            type="text"
+            placeholder="Search..."
+            className="px-3 py-2 border rounded-md w-full max-w-xs focus:ring-green-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {/* FMS Name Dropdown */}
+          <div>
+            <select
+              value={filterType === "col2" ? filterValue : ""}
+              onChange={(e) => {
+                setFilterType("col2");
+                setFilterValue(e.target.value);
+              }}
+              className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="">All FMS Names</option>
+              {getUniqueValues("col2").map((value, index) => (
+                <option key={index} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="relative ml-4" ref={filterRef}>
-          <button
-            onClick={() => setIsDialogOpen((prev) => !prev)}
-            className="px-10 py-2 border bg-white-600 text-black rounded hover:bg-grey-700"
-          >
-            Filter
-          </button>
-
-          {isDialogOpen && (
-            <div className="absolute right-0 top-12 bg-white border shadow-lg rounded-lg w-72 p-4 z-50">
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">
-                Filter Tasks
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="font-medium text-gray-700 block mb-1">
-                    Filter Column
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="filterType"
-                        value="col2"
-                        checked={filterType === "col2"}
-                        onChange={() => setFilterType("col2")}
-                      />
-                      FMS Name (Col 2)
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="filterType"
-                        value="col4"
-                        checked={filterType === "col4"}
-                        onChange={() => setFilterType("col4")}
-                      />
-                      Person Name (Col 4)
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-700 mb-1">
-                    Filter Value
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter filter value"
-                    value={filterValue}
-                    onChange={(e) => setFilterValue(e.target.value)}
-                    className="w-full border px-3 py-2 rounded"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => setIsDialogOpen(false)}
-                    className="px-4 py-2 border rounded hover:bg-gray-100"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => setIsDialogOpen(false)}
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  >
-                    Apply
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Person Name Dropdown */}
+          <div>
+            <select
+              value={filterType === "col4" ? filterValue : ""}
+              onChange={(e) => {
+                setFilterType("col4");
+                setFilterValue(e.target.value);
+              }}
+              className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500"
+            >
+              <option value="">All Person Names</option>
+              {getUniqueValues("col4").map((value, index) => (
+                <option key={index} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Tasks Table */}
-      {filteredPendingTasks.length > 0 ? (
+      {isLoading ? (
+        <div className="bg-white rounded-lg border shadow-sm p-6 text-center">
+          <p className="text-gray-500">Loading tasks...</p>
+        </div>
+      ) : error ? (
+        <div className="bg-white rounded-lg border shadow-sm p-6 text-center">
+          <p className="text-red-500">Error: {error}</p>
+          <button
+            onClick={fetchPendingData}
+            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Retry
+          </button>
+        </div>
+      ) : filteredTasks.length > 0 ? (
         <div className="bg-white rounded-lg border shadow-sm p-6">
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
-              All Pending Tasks
+              {filterValue
+                ? `Showing ${
+                    filterType === "col2" ? "FMS Name" : "Person Name"
+                  }: ${filterValue}`
+                : "All Tasks"}
             </h2>
             <p className="text-sm text-gray-500">
-              Tasks that require action and haven't been completed yet.
+              {filterValue
+                ? "Filtered tasks based on your selected criteria."
+                : "Showing all available tasks."}
             </p>
           </div>
           <div className="h-[calc(100vh-280px)] overflow-hidden">
-            <TasksTable isCompact={true} filterTasks={filteredPendingTasks} />
+            <TasksTable
+              isCompact={true}
+              filterTasks={filteredTasks}
+              visibleColumns={visibleColumns}
+            />
           </div>
         </div>
       ) : (

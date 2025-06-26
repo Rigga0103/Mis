@@ -79,6 +79,7 @@ const VerticalBarChart = ({ title = "Vertical Bar Chart" }) => {
           No chart image found in the spreadsheet
         </div>
       )}
+      {/* ---------------------------vchshcs-------------------------- */}
     </div>
   );
 };

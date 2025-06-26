@@ -86,7 +86,6 @@ const ImgWithFallback = ({ src, alt, name, fallbackElement, className }) => {
             </span>
           </div>
         )}
-        <span className="text-xs text-gray-500">Image not available</span>
       </div>
     );
   }
@@ -192,40 +191,40 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
 
   useEffect(() => {
     const processData = () => {
-      return filterTasks.map((item, index) => {
-        // console.log(`🔎 Row ${index + 1} data:`, item);
-
+      return filterTasks.map((item) => {
         const imageHeader = dynamicHeaders.find((header) => header.isImage);
         if (!imageHeader) return item;
 
-        // Get the image URL directly from the item object using the header ID
-        const driveImageUrl = item[imageHeader.id];
+        const rawValue = String(item[imageHeader.id] || "").replace(
+          /^"|"$/g,
+          ""
+        );
 
-        // console.log(`📷 Raw image URL for ${imageHeader.id}:`, driveImageUrl);
+        let imageUrl = "";
+        let userName = "";
 
-        if (
-          driveImageUrl &&
-          typeof driveImageUrl === "string" &&
-          driveImageUrl.trim() !== ""
-        ) {
-          const processedUrl = convertGoogleDriveImageUrl(driveImageUrl);
-          console.log(`🔧 Processing image for row ${index + 1}:`, {
-            original: driveImageUrl,
-            processed: processedUrl,
-            headerId: imageHeader.id,
-          });
-          return {
-            ...item,
-            [imageHeader.id]: processedUrl,
-          };
+        if (rawValue.includes(",")) {
+          // If comma is present, split into image and name
+          const parts = rawValue.split(/,(.+)/); // split on first comma only
+          imageUrl = parts[0]?.trim() || "";
+          userName = parts[1]?.trim() || "";
+        } else if (rawValue.startsWith("http")) {
+          // Only image present
+          imageUrl = rawValue.trim();
+          userName = "";
         } else {
-          console.log(
-            `⚠️ No valid image URL found for row ${index + 1}:`,
-            driveImageUrl
-          );
+          // Only name present
+          imageUrl = "";
+          userName = rawValue.trim();
         }
 
-        return item;
+        const finalUrl = convertGoogleDriveImageUrl(imageUrl);
+
+        return {
+          ...item,
+          _imageUrl: finalUrl,
+          _userName: userName || "User", // Default to "User" if name is empty
+        };
       });
     };
 
@@ -236,14 +235,14 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
     const value = item[header.id];
 
     if (header.isImage) {
-      const userName = item.col3 || item.col4 || "User";
-      console.log(`🔍 Rendering image for ${header.id}:`, value);
+      const imageUrl = item._imageUrl || "";
+      const userName = item._userName || "User";
 
       return (
         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
-          <div className="flex items-center justify-center">
+          <div className="flex items-center space-x-2">
             <ImgWithFallback
-              src={value}
+              src={imageUrl}
               alt={`${userName} profile`}
               name={userName}
               className="w-10 h-10 rounded-full"
@@ -253,6 +252,7 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
                 </div>
               }
             />
+            <span className="font-medium">{userName}</span>
           </div>
         </td>
       );
@@ -320,7 +320,48 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
       <div className="overflow-scroll">
         <div className={`min-w-full ${isCompact ? "max-h-96" : ""}`}>
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 sticky top-0">
+            <thead className="bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 z-10">
+              <tr>
+                {dynamicHeaders.map((header, index) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-3 h-16 text-center cursor-pointer hover:bg-gray-50 transition-colors duration-200 group relative"
+                    onClick={() => handleSort(header.id)}
+                  >
+                    <div className="flex flex-col h-full justify-center items-center space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          {header.label}
+                        </span>
+                        {header.isImage && (
+                          <div
+                            className="w-2 h-2 bg-green-400 rounded-full"
+                            title="Image Column"
+                          />
+                        )}
+                        {header.isDate && (
+                          <div
+                            className="w-2 h-2 bg-blue-400 rounded-full"
+                            title="Date Column"
+                          />
+                        )}
+                        {header.isProgress && (
+                          <div
+                            className="w-2 h-2 bg-orange-400 rounded-full"
+                            title="Progress Column"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {index < dynamicHeaders.length - 1 && (
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 h-6 w-px bg-gray-200"></div>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            {/* <thead className="bg-gray-50 sticky top-0">
               <tr>
                 {dynamicHeaders.map((header) => (
                   <th
@@ -331,7 +372,7 @@ const EmployeesTable = ({ isCompact = false, filterTasks, dynamicHeaders }) => {
                   </th>
                 ))}
               </tr>
-            </thead>
+            </thead> */}
             <tbody className="bg-white divide-y divide-gray-200">
               {processedData.map((item, index) => (
                 <tr
@@ -358,8 +399,8 @@ EmployeesTable.propTypes = {
     PropTypes.shape({
       _id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+      col2: PropTypes.string,
       col3: PropTypes.string,
-      col4: PropTypes.string,
     })
   ).isRequired,
   isCompact: PropTypes.bool,

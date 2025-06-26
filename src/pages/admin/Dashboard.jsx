@@ -44,7 +44,7 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
 
   // Updated DISPLAY_COLUMNS to include col13
-  const DISPLAY_COLUMNS = ["col3", "col4", "col5", "col14", "col15"];
+  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col13", "col14"];
   const ALLOWED_COLUMNS = [
     // "col0",
     "col2",
@@ -58,7 +58,7 @@ const AdminDashboard = () => {
     "col10",
     "col11",
     "col12",
-    "col13",
+    // "col13",
   ];
 
   const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
@@ -83,7 +83,7 @@ const AdminDashboard = () => {
         throw new Error("No table data found");
 
       // Define which columns should always be treated as progress columns
-      const PROGRESS_COLUMNS = ["col6", "col7", "col11", "col12"];
+      const PROGRESS_COLUMNS = ["col5", "col6", "col10", "col11"];
       // Define which columns contain images
       const IMAGE_COLUMNS = ["col2"];
       console.log(IMAGE_COLUMNS, "IMAGE_COLUMNS");
@@ -142,7 +142,7 @@ const AdminDashboard = () => {
     const matchesSearchTerm = DISPLAY_COLUMNS.some((colId) => {
       const value = item[colId];
       // For image columns, we might want to skip text search or handle differently
-      if (colId === "col13") {
+      if (colId === "col12") {
         // You can customize this logic based on how you want to handle image search
         return true; // Always include items with images, or implement custom logic
       }
