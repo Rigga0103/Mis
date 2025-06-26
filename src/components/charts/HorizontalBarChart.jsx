@@ -228,7 +228,7 @@ const HorizontalBarChart = ({
         <h3 className="text-lg font-semibold text-gray-800 mb-3">{title}</h3>
       )}
 
-      <div className="overflow-y-auto max-h-36 border rounded-lg bg-gray-50">
+      <div className="overflow-y-auto max-h-56 border rounded-lg bg-gray-50">
         <div style={{ height: `${chartHeight}px`, minHeight: "150px" }}>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -250,7 +250,7 @@ const HorizontalBarChart = ({
           </div>
 
           {/* 👇 Top 5 Names Display */}
-          <div className="mt-4">
+          {/* <div className="mt-4">
             <h4 className="text-sm font-medium text-gray-700 mb-1">
               Top 5 Names:
             </h4>
@@ -266,7 +266,7 @@ const HorizontalBarChart = ({
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </>
       )}
     </div>

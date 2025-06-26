@@ -60,27 +60,81 @@ const VerticalBarChart = ({
           const pendingMap = new Map();
 
           data.table.rows.forEach((row) => {
-            const name = String(row.c?.[3]?.v || "").trim(); // Column D (Name)
+            // Skip if column D (index 3) is 0
+            const columnD = row.c?.[3]?.v;
+            if (columnD === 0 || columnD === "0") return;
+
+            // Get name from column C (index 2)
+            const nameCell = row.c?.[2]?.v;
+            let name = "";
+
+            if (typeof nameCell === "string") {
+              name = nameCell.trim();
+            } else if (nameCell && typeof nameCell === "object") {
+              name = nameCell.label || "";
+            }
+
             if (!name) return;
 
-            const colJ = row.c?.[9]?.v;
-            let pending = 0;
-            if (typeof colJ === "number") pending = colJ;
-            else if (typeof colJ === "string")
-              pending = parseFloat(colJ.replace(/[^\d.-]/g, ""));
-            if (!isNaN(pending) && pending > 0) {
-              if (!pendingMap.has(name) || pending > pendingMap.get(name)) {
-                pendingMap.set(name, pending);
+            // Priority order: E -> F -> I -> J
+            let pendingValue = 0;
+
+            // Check column E (index 4)
+            const columnE = row.c?.[4]?.v;
+            if (typeof columnE === "number") {
+              pendingValue = columnE;
+            } else if (typeof columnE === "string") {
+              pendingValue = parseFloat(columnE.replace(/[^\d.-]/g, "")) || 0;
+            }
+
+            // If column E is 0 or empty, check column F (index 5)
+            if (!pendingValue) {
+              const columnF = row.c?.[5]?.v;
+              if (typeof columnF === "number") {
+                pendingValue = columnF;
+              } else if (typeof columnF === "string") {
+                pendingValue = parseFloat(columnF.replace(/[^\d.-]/g, "")) || 0;
+              }
+            }
+
+            // If still no value, check column I (index 8)
+            if (!pendingValue) {
+              const columnI = row.c?.[8]?.v;
+              if (typeof columnI === "number") {
+                pendingValue = columnI;
+              } else if (typeof columnI === "string") {
+                pendingValue = parseFloat(columnI.replace(/[^\d.-]/g, "")) || 0;
+              }
+            }
+
+            // Finally, fallback to column J (index 9)
+            if (!pendingValue) {
+              const columnJ = row.c?.[9]?.v;
+              if (typeof columnJ === "number") {
+                pendingValue = columnJ;
+              } else if (typeof columnJ === "string") {
+                pendingValue = parseFloat(columnJ.replace(/[^\d.-]/g, "")) || 0;
+              }
+            }
+
+            if (pendingValue > 0) {
+              // Keep the highest value for each name
+              if (
+                !pendingMap.has(name) ||
+                pendingValue > pendingMap.get(name)
+              ) {
+                pendingMap.set(name, pendingValue);
               }
             }
           });
 
-          const sorted = Array.from(pendingMap.entries())
+          // Get top 5 entries
+          const sortedData = Array.from(pendingMap.entries())
             .sort((a, b) => b[1] - a[1])
             .slice(0, 5);
 
-          const labels = sorted.map(([name]) => name);
-          const values = sorted.map(([, val]) => Math.round(val));
+          const labels = sortedData.map(([name]) => name);
+          const values = sortedData.map(([, val]) => Math.round(val));
 
           setChartData({
             labels,
@@ -96,7 +150,17 @@ const VerticalBarChart = ({
           });
         }
       } catch (err) {
-        console.error("Error fetching chart data:", err);
+        console.error("Error:", err);
+        setChartData({
+          labels: ["Error loading data"],
+          datasets: [
+            {
+              data: [100],
+              backgroundColor: [colors[0]],
+              borderWidth: 0,
+            },
+          ],
+        });
       } finally {
         setIsLoading(false);
       }
@@ -104,7 +168,6 @@ const VerticalBarChart = ({
 
     fetchData();
   }, [colors]);
-
   const options = {
     indexAxis: "x", // <-- Horizontal names, vertical bars
     responsive: true,
