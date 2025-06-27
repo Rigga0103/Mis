@@ -1,45 +1,194 @@
 import React from "react";
-import {
-  Calendar,
-  Flag,
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-} from "lucide-react";
+import { User } from "lucide-react";
 
-/**
- * @typedef {Object} Task
- * @property {string} id
- * @property {string} fmsName
- * @property {string} taskName
- * @property {string} personName
- * @property {string} todayTask
- * @property {string} pendingTillDate
- * @property {'completed'|'in-progress'|'pending'} status
- * @property {'high'|'medium'|'low'} priority
- */
+import { useState, useEffect } from "react";
+// ImgWithFallback Component (same as in EmployeesTable)
+const ImgWithFallback = ({ src, alt, name, fallbackElement, className }) => {
+  const [imgSrc, setImgSrc] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempts, setAttempts] = useState(0);
 
-/**
- * @typedef {Object} TasksTableProps
- * @property {Task[]} filterTasks - Array of task objects
- * @property {boolean} [isCompact=false] - Compact table view
- * @property {'today'|'pending'} [type='today']
- */
+  const getDriveImageUrls = (originalUrl) => {
+    if (!originalUrl || typeof originalUrl !== "string") return [];
 
-// ✅ STATIC HEADERS for the TABLE (only affects <thead>)
-const staticHeaders = [
-  { id: "col3", label: "Task Name" },
-  { id: "col4", label: "Person Name" },
-  { id: "col15", label: "Today Task" },
-  { id: "col21", label: "Attendence" },
-];
+    const fileIdMatch = originalUrl.match(
+      /\/file\/d\/([^/]+)|id=([^&]+)|\/d\/([^/]+)/
+    );
+    const fileId = fileIdMatch
+      ? fileIdMatch[1] || fileIdMatch[2] || fileIdMatch[3]
+      : null;
 
+    if (!fileId) return [originalUrl];
+
+    return [
+      `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`,
+      `https://lh3.googleusercontent.com/d/${fileId}=w400`,
+      `https://drive.google.com/uc?export=view&id=${fileId}`,
+      originalUrl,
+    ];
+  };
+
+  useEffect(() => {
+    if (!src || src.trim() === "") {
+      setLoadFailed(true);
+      return;
+    }
+
+    const urls = getDriveImageUrls(src);
+    if (urls.length === 0) {
+      setLoadFailed(true);
+      return;
+    }
+
+    setImgSrc(urls[0]);
+    setLoadFailed(false);
+    setAttempts(0);
+  }, [src]);
+
+  const handleError = () => {
+    const urls = getDriveImageUrls(src);
+    const nextAttempt = attempts + 1;
+
+    if (nextAttempt < urls.length) {
+      setImgSrc(urls[nextAttempt]);
+      setAttempts(nextAttempt);
+    } else {
+      setLoadFailed(true);
+    }
+  };
+
+  if (loadFailed || !src) {
+    return (
+      <div className="flex flex-col items-center justify-center space-y-1">
+        {fallbackElement ? (
+          fallbackElement
+        ) : (
+          <div
+            className={`${className} bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center`}
+          >
+            <span className="text-white text-lg font-bold">
+              {name
+                ?.split(" ")
+                .slice(0, 2)
+                .map((part) => part.charAt(0))
+                .join("")
+                .toUpperCase() || "?"}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imgSrc}
+      alt={alt}
+      onError={handleError}
+      className={`${className} object-cover`}
+      loading="lazy"
+      crossOrigin="anonymous"
+      referrerPolicy="no-referrer"
+    />
+  );
+};
+
+// Utility function to convert Google Drive URLs
+const convertGoogleDriveImageUrl = (url) => {
+  if (!url) return null;
+
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9-_]+)/,
+    /id=([a-zA-Z0-9-_]+)/,
+    /\/d\/([a-zA-Z0-9-_]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const fileId = match[1];
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+    }
+  }
+
+  return url;
+};
+
+// Main Component
 const TodayTasksTable = ({
   isCompact = false,
   type = "today",
   filterTasks = [],
 }) => {
-  console.log(filterTasks, "filterTasks");
+  const [processedData, setProcessedData] = useState([]);
+
+  useEffect(() => {
+    const processData = () => {
+      return filterTasks.map((item) => {
+        const rawValue = String(item.col23 || "").replace(/^"|"$/g, "");
+
+        let imageUrl = "";
+        let userName = "";
+
+        if (rawValue.includes(",")) {
+          const parts = rawValue.split(/,(.+)/);
+          imageUrl = parts[0]?.trim() || "";
+          userName = parts[1]?.trim() || "";
+        } else if (rawValue.startsWith("http")) {
+          imageUrl = rawValue.trim();
+          userName = "";
+        } else {
+          imageUrl = "";
+          userName = rawValue.trim();
+        }
+
+        const finalUrl = convertGoogleDriveImageUrl(imageUrl);
+
+        return {
+          ...item,
+          _imageUrl: finalUrl,
+          _userName: userName || "User",
+        };
+      });
+    };
+
+    setProcessedData(processData());
+  }, [filterTasks]);
+
+  const renderCell = (item, headerId) => {
+    if (headerId === "col13") {
+      const imageUrl = item._imageUrl || "";
+      const userName = item._userName || "User";
+
+      return (
+        <div className="flex items-center space-x-2">
+          <ImgWithFallback
+            src={imageUrl}
+            alt={`${userName} profile`}
+            name={userName}
+            className="w-8 h-8 rounded-full"
+            fallbackElement={
+              <div className="w-8 h-8 bg-gray-200 rounded-full p-1 flex items-center justify-center">
+                <User size={14} className="text-gray-400" />
+              </div>
+            }
+          />
+          <span className="font-medium text-sm">{userName}</span>
+        </div>
+      );
+    }
+
+    return item[headerId] || "—";
+  };
+
+  const staticHeaders = [
+    { id: "col2", label: "Fms Name" },
+    { id: "col3", label: "Task Name" },
+    { id: "col4", label: "Person Name" },
+    { id: "col15", label: "Today Task" },
+    { id: "col13", label: "Link With Name" },
+  ];
+
   return (
     <div
       className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
@@ -66,7 +215,7 @@ const TodayTasksTable = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filterTasks.length === 0 ? (
+              {processedData.length === 0 ? (
                 <tr>
                   <td
                     colSpan={staticHeaders.length}
@@ -76,14 +225,14 @@ const TodayTasksTable = ({
                   </td>
                 </tr>
               ) : (
-                filterTasks.map((item) => (
-                  <tr key={item._id}>
+                processedData.map((item) => (
+                  <tr key={item._id} className="hover:bg-gray-50">
                     {staticHeaders.map((header) => (
                       <td
                         key={header.id}
                         className="px-3 py-2 text-sm text-gray-700"
                       >
-                        {item[header.id] || "—"}
+                        {renderCell(item, header.id)}
                       </td>
                     ))}
                   </tr>

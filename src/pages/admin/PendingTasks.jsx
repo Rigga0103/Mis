@@ -2,14 +2,37 @@
 import TasksTable from "../../components/tables/TasksTable";
 import { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
+import { User } from "lucide-react";
+
+// Utility function to convert Google Drive URLs
+const convertGoogleDriveImageUrl = (url) => {
+  if (!url) return null;
+
+  const patterns = [
+    /\/file\/d\/([a-zA-Z0-9-_]+)/,
+    /id=([a-zA-Z0-9-_]+)/,
+    /\/d\/([a-zA-Z0-9-_]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const fileId = match[1];
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+    }
+  }
+
+  return url;
+};
 
 const AdminPendingTasks = () => {
   const [pendingTasks, setPendingTasks] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("col4"); // Default to person name
+  const [filterType, setFilterType] = useState("col23");
   const [filterValue, setFilterValue] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showPersonDropdown, setShowPersonDropdown] = useState(false);
 
   const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col14"];
   const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
@@ -36,6 +59,30 @@ const AdminPendingTasks = () => {
             itemObj[`col${i}`] = cell?.v ?? cell?.f ?? "";
           });
         }
+
+        // Process col23 for image and name
+        const rawValue = String(itemObj.col23 || "").replace(/^"|"$/g, "");
+        let imageUrl = "";
+        let userName = "";
+
+        if (rawValue.includes(",")) {
+          const parts = rawValue.split(/,(.+)/);
+          imageUrl = parts[0]?.trim() || "";
+          userName = parts[1]?.trim() || "";
+        } else if (rawValue.startsWith("http")) {
+          imageUrl = rawValue.trim();
+          userName = "";
+        } else {
+          imageUrl = "";
+          userName = rawValue.trim();
+        }
+
+        itemObj._imageUrl = convertGoogleDriveImageUrl(imageUrl);
+        itemObj._userName = userName || "User";
+        itemObj._combinedValue = userName
+          ? `${imageUrl},${userName}`
+          : imageUrl || userName;
+
         return itemObj;
       });
 
@@ -61,14 +108,38 @@ const AdminPendingTasks = () => {
     fetchPendingData();
   }, []);
 
-  // Get unique values for dropdown based on selected filter type
-  const getUniqueValues = (columnKey) => {
-    const values = pendingTasks
-      .map((item) => String(item[columnKey] || "").trim())
-      .filter((value) => value !== "")
-      .filter((value, index, self) => self.indexOf(value) === index)
-      .sort();
-    return values;
+  // Get unique person names with their images from col23
+  const getPersonNamesWithImages = () => {
+    const personMap = new Map();
+
+    pendingTasks.forEach((item) => {
+      const combinedValue = item._combinedValue;
+      if (combinedValue && combinedValue.trim() !== "") {
+        if (!personMap.has(combinedValue)) {
+          personMap.set(combinedValue, {
+            value: combinedValue,
+            displayName: item._userName || "User",
+            imageUrl: item._imageUrl,
+          });
+        }
+      }
+    });
+
+    return Array.from(personMap.values()).sort((a, b) =>
+      a.displayName.localeCompare(b.displayName)
+    );
+  };
+
+  // Get unique FMS names
+  const getFMSNames = () => {
+    const fmsNames = new Set();
+    pendingTasks.forEach((item) => {
+      const fmsName = String(item.col2 || "").trim();
+      if (fmsName !== "") {
+        fmsNames.add(fmsName);
+      }
+    });
+    return Array.from(fmsNames).sort();
   };
 
   const filteredTasks = pendingTasks.filter((item) => {
@@ -79,19 +150,20 @@ const AdminPendingTasks = () => {
         .includes(term)
     );
     const matchesFilter = filterValue
-      ? String(item[filterType] || "").trim() === filterValue
+      ? item._combinedValue === filterValue
       : true;
     return matchesSearch && matchesFilter;
   });
 
-  // Show all columns when no specific filter is selected, otherwise show filtered column
-  const visibleColumns = filterValue ? [filterType] : DISPLAY_COLUMNS;
-
-  // Reset other filter when one is selected
-  const handleFilterChange = (newFilterType, newFilterValue) => {
-    setFilterType(newFilterType);
-    setFilterValue(newFilterValue);
+  const handlePersonSelect = (person) => {
+    setFilterType("col23");
+    setFilterValue(person.value);
+    setShowPersonDropdown(false);
   };
+
+  const selectedPerson = getPersonNamesWithImages().find(
+    (p) => p.value === filterValue
+  );
 
   return (
     <div className="space-y-6">
@@ -108,7 +180,6 @@ const AdminPendingTasks = () => {
 
       {/* Search + Inline Filter */}
       <div className="bg-white p-4 rounded border space-y-4">
-        {/* Filter Options with Dropdowns */}
         <div className="grid md:grid-cols-3 gap-4">
           {/* Search Input */}
           <input
@@ -118,6 +189,108 @@ const AdminPendingTasks = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+
+          {/* Custom Person Dropdown */}
+          <div className="relative">
+            <div
+              className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500 bg-white cursor-pointer flex justify-between items-center"
+              onClick={() => setShowPersonDropdown(!showPersonDropdown)}
+            >
+              {selectedPerson ? (
+                <div className="flex items-center">
+                  {selectedPerson.imageUrl ? (
+                    <img
+                      src={selectedPerson.imageUrl}
+                      alt={selectedPerson.displayName}
+                      className="w-6 h-6 rounded-full mr-2 object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = "";
+                        e.target.className =
+                          "w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center";
+                        e.target.innerHTML = `<span class="text-xs">${
+                          selectedPerson.displayName?.charAt(0) || "?"
+                        }</span>`;
+                      }}
+                    />
+                  ) : (
+                    <div className="w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center">
+                      <span className="text-xs">
+                        {selectedPerson.displayName?.charAt(0) || "?"}
+                      </span>
+                    </div>
+                  )}
+                  <span>{selectedPerson.displayName}</span>
+                </div>
+              ) : (
+                <span>All Persons</span>
+              )}
+              <svg
+                className={`w-4 h-4 ml-2 transition-transform ${
+                  showPersonDropdown ? "rotate-180" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+
+            {showPersonDropdown && (
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                <div
+                  className="p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() =>
+                    handlePersonSelect({
+                      value: "",
+                      displayName: "All Persons",
+                    })
+                  }
+                >
+                  All Persons
+                </div>
+                {getPersonNamesWithImages().map((person) => (
+                  <div
+                    key={person.value}
+                    className="p-2 hover:bg-gray-100 cursor-pointer flex items-center"
+                    onClick={() => handlePersonSelect(person)}
+                  >
+                    {person.imageUrl ? (
+                      <img
+                        src={person.imageUrl}
+                        alt={person.displayName}
+                        className="w-6 h-6 rounded-full mr-2 object-cover"
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "";
+                          e.target.className =
+                            "w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center";
+                          e.target.innerHTML = `<span class="text-xs">${
+                            person.displayName?.charAt(0) || "?"
+                          }</span>`;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center">
+                        <span className="text-sm">
+                          {person.displayName?.charAt(0) || "?"}
+                        </span>
+                      </div>
+                    )}
+                    <span>{person.displayName}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* FMS Name Dropdown */}
           <div>
             <select
@@ -129,28 +302,9 @@ const AdminPendingTasks = () => {
               className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500"
             >
               <option value="">All FMS Names</option>
-              {getUniqueValues("col2").map((value, index) => (
-                <option key={index} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Person Name Dropdown */}
-          <div>
-            <select
-              value={filterType === "col4" ? filterValue : ""}
-              onChange={(e) => {
-                setFilterType("col4");
-                setFilterValue(e.target.value);
-              }}
-              className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500"
-            >
-              <option value="">All Person Names</option>
-              {getUniqueValues("col4").map((value, index) => (
-                <option key={index} value={value}>
-                  {value}
+              {getFMSNames().map((fmsName) => (
+                <option key={fmsName} value={fmsName}>
+                  {fmsName}
                 </option>
               ))}
             </select>
@@ -178,9 +332,9 @@ const AdminPendingTasks = () => {
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-800">
               {filterValue
-                ? `Showing ${
-                    filterType === "col2" ? "FMS Name" : "Person Name"
-                  }: ${filterValue}`
+                ? `Showing ${filterType === "col2" ? "FMS Name" : "Person"}: ${
+                    selectedPerson?.displayName || filterValue
+                  }`
                 : "All Tasks"}
             </h2>
             <p className="text-sm text-gray-500">
@@ -193,7 +347,7 @@ const AdminPendingTasks = () => {
             <TasksTable
               isCompact={true}
               filterTasks={filteredTasks}
-              visibleColumns={visibleColumns}
+              type="pending"
             />
           </div>
         </div>

@@ -46,13 +46,12 @@ const HorizontalBarChart = ({
         borderWidth: 0,
         borderRadius: 6,
         borderSkipped: false,
-        maxBarThickness: 28,
+        barThickness: 20,
         minBarLength: 5,
       },
     ],
   });
   const [nameMap, setNameMap] = useState({});
-  const [top5Info, setTop5Info] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -105,15 +104,6 @@ const HorizontalBarChart = ({
 
           setNameMap(nameMapping);
 
-          // Save top 5 info
-          const top5 = sortedData.slice(0, 5).map(([label, value], index) => ({
-            label,
-            value,
-            name: nameMapping[label] || "No name",
-            color: colors[index % colors.length],
-          }));
-          setTop5Info(top5);
-
           setChartData({
             labels,
             datasets: [
@@ -125,7 +115,7 @@ const HorizontalBarChart = ({
                 borderWidth: 0,
                 borderRadius: 6,
                 borderSkipped: false,
-                maxBarThickness: 28,
+                barThickness: 20,
                 minBarLength: 5,
               },
             ],
@@ -142,7 +132,7 @@ const HorizontalBarChart = ({
               borderWidth: 0,
               borderRadius: 6,
               borderSkipped: false,
-              maxBarThickness: 28,
+              barThickness: 20,
               minBarLength: 5,
             },
           ],
@@ -155,29 +145,38 @@ const HorizontalBarChart = ({
     fetchData();
   }, [colors, maxValue]);
 
-  const chartHeight = Math.max(150, chartData.labels.length * 25);
+  // Fixed height for scrollable container
+  const chartHeight = Math.max(400, chartData.labels.length * 35);
 
   const options = {
     indexAxis: "y",
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        left: 10,
+        right: 10,
+        top: 10,
+        bottom: 10,
+      },
+    },
     plugins: {
       legend: { display: false },
       title: {
         display: !!title,
         text: title || "",
-        font: { size: 16, weight: "600", family: "'Inter', sans-serif" },
+        font: { size: 18, weight: "600", family: "'Inter', sans-serif" },
         color: "#1F2937",
-        padding: { bottom: 15 },
+        padding: { bottom: 20, top: 10 },
       },
       tooltip: {
         backgroundColor: "rgba(17, 24, 39, 0.95)",
         titleColor: "#fff",
         bodyColor: "#fff",
-        padding: 10,
-        boxPadding: 6,
-        titleFont: { size: 13, weight: "600", family: "'Inter', sans-serif" },
-        bodyFont: { size: 12, family: "'Inter', sans-serif" },
+        padding: 12,
+        boxPadding: 8,
+        titleFont: { size: 14, weight: "600", family: "'Inter', sans-serif" },
+        bodyFont: { size: 13, family: "'Inter', sans-serif" },
         callbacks: {
           label: function (context) {
             const label = context.label || "";
@@ -195,25 +194,34 @@ const HorizontalBarChart = ({
         beginAtZero: true,
         max:
           maxValue || Math.max(...(chartData.datasets[0]?.data || [0])) * 1.1,
-        grid: { display: true, color: "#f1f5f9" },
-        ticks: {
-          font: { size: 11, family: "'Inter', sans-serif" },
-          color: "#64748B",
+        grid: {
+          display: true,
+          color: "#f1f5f9",
+          drawBorder: false,
         },
-        border: { display: false },
+        ticks: {
+          font: { size: 12, family: "'Inter', sans-serif" },
+          color: "#64748B",
+          padding: 8,
+        },
       },
       y: {
-        grid: { display: false },
+        grid: {
+          display: false,
+          drawBorder: false,
+        },
         ticks: {
-          font: { size: 10, family: "'Inter', sans-serif" },
+          font: { size: 12, family: "'Inter', sans-serif" },
           color: "#64748B",
-          maxRotation: 0,
+          padding: 8,
           callback: (value, index) => {
             const label = chartData.labels[index];
-            return label?.length > 15 ? label.substring(0, 15) + "..." : label;
+            const name = nameMap[label] || "";
+
+            // Show label on first line and name on second line
+            return [label, name];
           },
         },
-        border: { display: false },
       },
     },
     animation: {
@@ -223,18 +231,27 @@ const HorizontalBarChart = ({
   };
 
   return (
-    <div className="relative bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+    <div className="relative bg-white rounded-lg p-6 shadow-sm border border-gray-200 w-full">
       {title && (
-        <h3 className="text-lg font-semibold text-gray-800 mb-3">{title}</h3>
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">{title}</h3>
       )}
 
-      <div className="overflow-y-auto max-h-56 border rounded-lg bg-gray-50">
-        <div style={{ height: `${chartHeight}px`, minHeight: "150px" }}>
+      <div
+        className="overflow-y-auto border rounded-lg bg-gray-50 p-2"
+        style={{ height: "200px" }} // Fixed height container
+      >
+        <div
+          style={{
+            height: `${chartHeight}px`,
+            minHeight: "200px",
+            width: "100%",
+          }}
+        >
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto mb-1.5"></div>
-                <p className="text-gray-600 text-sm">Loading...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                <p className="text-gray-600 text-sm">Loading data...</p>
               </div>
             </div>
           ) : (
@@ -244,30 +261,9 @@ const HorizontalBarChart = ({
       </div>
 
       {!isLoading && chartData.labels.length > 0 && (
-        <>
-          <div className="mt-3 text-xs text-gray-500">
-            Showing {chartData.labels.length} items
-          </div>
-
-          {/* 👇 Top 5 Names Display */}
-          {/* <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">
-              Top 5 Names:
-            </h4>
-            <ul className="text-sm space-y-1">
-              {top5Info.map((item, index) => (
-                <li key={index} className="flex items-center space-x-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                  <span className="text-gray-700">{item.name}</span>
-                  <span className="text-gray-400">({item.value})</span>
-                </li>
-              ))}
-            </ul>
-          </div> */}
-        </>
+        <div className="mt-4 text-sm text-gray-500 text-right">
+          Showing {chartData.labels.length} items
+        </div>
       )}
     </div>
   );

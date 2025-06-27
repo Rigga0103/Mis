@@ -1,5 +1,4 @@
 import React from "react";
-
 import { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { Download } from "lucide-react";
@@ -18,10 +17,6 @@ import VerticalBarChart from "../../components/charts/VerticalBarChart";
 import { generateDashboardPDF } from "../../utils/pdfGenerator";
 import DepartmentScores from "../../components/charts/DepartmentScores";
 
-/**
- * Admin Dashboard component that displays various data visualizations and tables
- * @returns {JSX.Element} The rendered dashboard
- */
 const AdminDashboard = () => {
   // Get data for charts
   const topScorers = getTopScorers(5);
@@ -43,10 +38,10 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Updated DISPLAY_COLUMNS to include col13
-  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col13", "col14"];
+  // Updated to show col13 first
+  const DISPLAY_COLUMNS = ["col13", "col2", "col3", "col4", "col14"];
   const ALLOWED_COLUMNS = [
-    // "col0",
+    "col13", // Now first
     "col2",
     "col3",
     "col4",
@@ -58,11 +53,9 @@ const AdminDashboard = () => {
     "col10",
     "col11",
     "col12",
-    // "col13",
   ];
 
   const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
-
   const [dashboardHeaders, setDashboardHeaders] = useState([]);
 
   const fetchDashboardData = async () => {
@@ -82,21 +75,17 @@ const AdminDashboard = () => {
       if (!data.table || !data.table.rows)
         throw new Error("No table data found");
 
-      // Define which columns should always be treated as progress columns
       const PROGRESS_COLUMNS = ["col5", "col6", "col10", "col11"];
-      // Define which columns contain images
-      const IMAGE_COLUMNS = ["col2"];
-      console.log(IMAGE_COLUMNS, "IMAGE_COLUMNS");
+      const IMAGE_COLUMNS = ["col13"];
+
       const headers = data.table.cols.map((col, colIndex) => {
         const columnId = `col${colIndex}`;
         const sampleValue = data.table.rows?.[0]?.c?.[colIndex]?.v ?? "";
 
-        // Check if column should be progress (either by content or manual list)
         const isProgressColumn =
           PROGRESS_COLUMNS.includes(columnId) ||
           (typeof sampleValue === "string" && sampleValue.includes("%"));
 
-        // Check if column contains images
         const isImageColumn = IMAGE_COLUMNS.includes(columnId);
 
         return {
@@ -138,18 +127,11 @@ const AdminDashboard = () => {
 
   const filteredDashboard = dashboardTasks.filter((item) => {
     const term = searchTerm.toLowerCase();
-
-    const matchesSearchTerm = DISPLAY_COLUMNS.some((colId) => {
+    return DISPLAY_COLUMNS.some((colId) => {
       const value = item[colId];
-      // For image columns, we might want to skip text search or handle differently
-      if (colId === "col12") {
-        // You can customize this logic based on how you want to handle image search
-        return true; // Always include items with images, or implement custom logic
-      }
+      if (colId === "col13") return true; // Always include image column
       return value && String(value).toLowerCase().includes(term);
     });
-
-    return matchesSearchTerm;
   });
 
   if (isLoading) {
@@ -186,17 +168,13 @@ const AdminDashboard = () => {
               List of People
             </h2>
             <div className="relative h-[calc(100vh-300px)] overflow-hidden">
-              {" "}
-              {/* Fixed height container */}
               <div className="absolute inset-0 overflow-y-auto">
-                {" "}
-                {/* Scrollable area */}
                 <EmployeesTable
                   isCompact={true}
                   filterTasks={filteredDashboard}
-                  dynamicHeaders={dashboardHeaders.filter((header) =>
-                    ALLOWED_COLUMNS.includes(header.id)
-                  )}
+                  dynamicHeaders={ALLOWED_COLUMNS.map((colId) =>
+                    dashboardHeaders.find((header) => header.id === colId)
+                  ).filter(Boolean)}
                 />
               </div>
             </div>
@@ -216,8 +194,9 @@ const AdminDashboard = () => {
           </div>
         )}
       </div>
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+      {/* Rest of your charts and components remain the same */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
         {/* Top Scorers */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
@@ -228,21 +207,6 @@ const AdminDashboard = () => {
               data={topScorersData}
               labels={topScorersLabels}
               colors={["#8DD9D5", "#6BBBEA", "#BEA1E8", "#FFB77D", "#FF99A8"]}
-            />
-          </div>
-        </div>
-
-        {/* Pending Tasks */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Pending Tasks by User
-          </h2>
-          <div className="h-64">
-            <HorizontalBarChart
-              data={pendingTasksData}
-              labels={pendingTasksLabels}
-              colors={["#ef4444", "#f87171", "#fca5a5", "#fecaca", "#fee2e2"]}
-              maxValue={Math.max(...pendingTasksData) + 1}
             />
           </div>
         </div>
@@ -260,6 +224,21 @@ const AdminDashboard = () => {
               maxValue={100}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Pending Tasks */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">
+          Pending Tasks by User
+        </h2>
+        <div className="h-64">
+          <HorizontalBarChart
+            data={pendingTasksData}
+            labels={pendingTasksLabels}
+            colors={["#ef4444", "#f87171", "#fca5a5", "#fecaca", "#fee2e2"]}
+            maxValue={Math.max(...pendingTasksData) + 1}
+          />
         </div>
       </div>
 
