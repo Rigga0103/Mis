@@ -182,11 +182,11 @@ const TodayTasksTable = ({
   };
 
   const staticHeaders = [
+    { id: "col13", label: "Link With Name" },
     { id: "col2", label: "Fms Name" },
     { id: "col3", label: "Task Name" },
-    { id: "col4", label: "Person Name" },
+    // { id: "col4", label: "Person Name" },
     { id: "col15", label: "Today Task" },
-    { id: "col13", label: "Link With Name" },
   ];
 
   return (
@@ -207,7 +207,7 @@ const TodayTasksTable = ({
                 {staticHeaders.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-3 py-2 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider"
                   >
                     {header.label}
                   </th>
@@ -230,7 +230,7 @@ const TodayTasksTable = ({
                     {staticHeaders.map((header) => (
                       <td
                         key={header.id}
-                        className="px-3 py-2 text-sm text-gray-700"
+                        className="px-3 py-2 text-sm text-gray-700 text-center"
                       >
                         {renderCell(item, header.id)}
                       </td>

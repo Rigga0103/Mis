@@ -9,6 +9,7 @@ import {
   Target,
   Video,
 } from "lucide-react";
+import KpikraTable from "../../components/tables/KpikraTable";
 
 const KpiKra = () => {
   const [selectedDesignation, setSelectedDesignation] = useState("");
@@ -279,90 +280,7 @@ const KpiKra = () => {
           </div>
         </div>
       </div>
-      {/* Systems Table - Full Width */}
-      {/* <div className="lg:col-span-3 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="bg-gradient-to-r from-gray-50 to-white p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <Database className="w-6 h-6 text-gray-600" />
-            <h2 className="text-lg font-semibold text-gray-800">
-              Systems and Resources
-            </h2>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  System Name
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Task Name
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Resources
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {currentData.systems.map((system, index) => (
-                <tr key={index} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {system.systemName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-700">
-                      {system.taskName}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-700">
-                      {system.description}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <a
-                        href={system.systemLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
-                      >
-                        <Link className="w-4 h-4" />
-                        <span className="text-sm font-medium">System</span>
-                      </a>
-                      <a
-                        href={system.dbLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-emerald-600 hover:text-emerald-800 transition-colors"
-                      >
-                        <Database className="w-4 h-4" />
-                        <span className="text-sm font-medium">Dashboard</span>
-                      </a>
-                      <a
-                        href={system.trainingVideo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-colors"
-                      >
-                        <PlayCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">Training</span>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div> */}
+      <KpikraTable />
     </div>
   );
 };

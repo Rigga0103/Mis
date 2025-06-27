@@ -170,9 +170,9 @@ const AdminTodayTasks = () => {
 
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Pending Tasks</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Today Tasks</h1>
         <div className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
-          {filteredTasks.length} Pending Task
+          {filteredTasks.length} Today Task
           {filteredTasks.length !== 1 ? "s" : ""}
         </div>
       </div>

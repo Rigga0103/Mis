@@ -182,16 +182,16 @@ const TasksTable = ({
   };
 
   const staticHeaders = [
+    { id: "col13", label: "Link With Name" },
     { id: "col2", label: "Fms Name" },
     { id: "col3", label: "Task Name" },
-    { id: "col4", label: "Person Name" },
+    // { id: "col4", label: "Person Name" },
     { id: "col14", label: "Pending Till Date" },
-    { id: "col13", label: "Link With Name" },
   ];
 
   return (
     <div
-      className={`bg-white rounded-lg border border-gray-200 overflow-hidden ${
+      className={`w-full max-w-[1000px] mx-auto bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden ${
         isCompact ? "max-h-96" : ""
       }`}
     >
@@ -202,12 +202,12 @@ const TasksTable = ({
           }`}
         >
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 sticky top-0">
+            <thead className="bg-gradient-to-r from-gray-100 to-gray-50 sticky top-0 z-10 shadow-sm">
               <tr>
                 {staticHeaders.map((header) => (
                   <th
                     key={header.id}
-                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    className="px-4 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-300"
                   >
                     {header.label}
                   </th>
@@ -219,18 +219,21 @@ const TasksTable = ({
                 <tr>
                   <td
                     colSpan={staticHeaders.length}
-                    className="px-3 py-4 text-sm text-center text-gray-500"
+                    className="px-4 py-6 text-base text-center text-gray-500"
                   >
                     No results found.
                   </td>
                 </tr>
               ) : (
                 processedData.map((item) => (
-                  <tr key={item._id} className="hover:bg-gray-50">
+                  <tr
+                    key={item._id}
+                    className="hover:bg-gray-50 transition-colors duration-200"
+                  >
                     {staticHeaders.map((header) => (
                       <td
                         key={header.id}
-                        className="px-3 py-2 text-sm text-gray-700"
+                        className="px-4 py-3 text-sm text-gray-800 whitespace-nowrap"
                       >
                         {renderCell(item, header.id)}
                       </td>
