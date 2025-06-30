@@ -10,7 +10,6 @@ import {
   Database,
   Link,
   PlayCircle,
-  RefreshCw,
 } from "lucide-react";
 
 const STATICKHEADERS = [
@@ -20,7 +19,7 @@ const STATICKHEADERS = [
   "Training Video Link",
 ];
 
-const KpikraTable = () => {
+const AppScript = () => {
   const [pendingTasks, setPendingTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -106,16 +105,6 @@ const KpikraTable = () => {
   const keyPerson = row6Data.col0 || "No data available";
   return (
     <div className="space-y-6">
-      <div className="flex justify-end">
-        <button
-          onClick={fetchPendingData}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          <span className="text-sm font-medium">Refresh All Data</span>
-        </button>
-      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Role Information Card */}
         <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6 transform transition-all hover:scale-[1.02]">
@@ -360,4 +349,4 @@ const KpikraTable = () => {
   );
 };
 
-export default KpikraTable;
+export default AppScript;
