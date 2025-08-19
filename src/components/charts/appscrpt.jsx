@@ -24,7 +24,7 @@ const AppScript = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const SPREADSHEET_ID = "1h8lu66_hZlHm3tkaUhypmM_HhKP2WCaCfOPmAsisqKY";
+  const SPREADSHEET_ID = "1GHb1qDJ1ZaUFzIrb1ezXqYd-6ePFAAe4upYotiP92JY";
 
   const fetchPendingData = async () => {
     try {

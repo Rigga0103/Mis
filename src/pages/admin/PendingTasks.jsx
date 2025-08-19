@@ -1,10 +1,10 @@
+
+
 "use client";
-import TasksTable from "../../components/tables/TasksTable";
 import { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { User } from "lucide-react";
 
-// Utility function to convert Google Drive URLs
 const convertGoogleDriveImageUrl = (url) => {
   if (!url) return null;
 
@@ -19,10 +19,127 @@ const convertGoogleDriveImageUrl = (url) => {
     if (match) {
       const fileId = match[1];
       return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+
     }
   }
 
   return url;
+};
+
+const Avatar = ({ imageUrl, userName, size = "w-8 h-8" }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const handleImageError = () => {
+    console.log(`Image failed to load: ${imageUrl}`);
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  if (!imageUrl || imageError) {
+    return (
+      <div className={`${size} bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold shadow-sm`}>
+        <span className="text-xs uppercase">
+          {userName?.charAt(0) || "?"}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`${size} relative`}>
+      {imageLoading && (
+        <div className={`${size} bg-gray-200 rounded-full animate-pulse absolute inset-0`}></div>
+      )}
+      <img
+        src={imageUrl}
+        alt={userName || "User"}
+        className={`${size} rounded-full object-cover border-2 border-white shadow-sm ${imageLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-200`}
+        onError={handleImageError}
+        onLoad={handleImageLoad}
+        loading="lazy"
+      />
+    </div>
+  );
+};
+
+const PendingTasksTable = ({ isCompact, filterTasks, type }) => {
+  const tableHeaders = [
+    { key: "col23", label: "Link With Name" },
+    { key: "col2", label: "FMS Name" },
+    { key: "col3", label: "Task Name" },
+    { key: "col9", label: "Pending Task" },
+  ];
+
+  return (
+    <div className="overflow-auto h-full">
+      <table className="w-full border-collapse">
+        <thead className="bg-gray-50 sticky top-0 z-10">
+          <tr>
+            {tableHeaders.map((header) => (
+              <th
+                key={header.key}
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b"
+              >
+                {header.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {filterTasks.map((task, index) => (
+            <tr
+              key={task._id}
+              className={`hover:bg-gray-50 transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                }`}
+            >
+              {tableHeaders.map((header) => (
+                <td
+                  key={`${task._id}-${header.key}`}
+                  className="px-4 py-3 text-sm text-gray-900 border-b"
+                >
+                  {header.key === "col23" ? (
+                    <div className="flex items-center">
+                      <Avatar
+                        imageUrl={task._imageUrl}
+                        userName={task._userName}
+                        size="w-6 h-6"
+                      />
+                      <span className="ml-2" title={`Original: ${task.col23}`}>
+                        {task._userName || "No Name"}
+                      </span>
+                    </div>
+                  ) : header.key === "col9" ? (
+                    <span className="text-gray-900">
+                      {String(task[header.key] || "").trim() || "0"}
+                    </span>
+                  ) : header.key === "col2" ? (
+                    <div className="flex items-center">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                      <span className="font-medium">
+                        {task._fmsName || String(task[header.key] || "").trim() || "-"}
+                      </span>
+                    </div>
+                  ) : header.key === "col3" ? (
+                    <span className="text-gray-900 font-medium">
+                      {task._taskName || String(task[header.key] || "").trim() || "-"}
+                    </span>
+                  ) : (
+                    String(task[header.key] || "").trim() || "-"
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 const AdminPendingTasks = () => {
@@ -33,16 +150,52 @@ const AdminPendingTasks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
+  const [dataSheetData, setDataSheetData] = useState([]);
 
-  const DISPLAY_COLUMNS = ["col2", "col3", "col4", "col14"];
-  const SPREADSHEET_ID = "1KnflbDnevxgzPqsBfsduPWS75SiQq_l2V5lip6_KMog";
+  const DISPLAY_COLUMNS = ["col2", "col3", "col13", "col9"];
+  const SPREADSHEET_ID = "1N2u0i7VDR4XRtNlb8_IulnUOCQO9Als5jLzo3ykEf9c";
+  const PENDING_TASK_COLUMN = "col9";
+
+  const fetchDataSheet = async () => {
+    try {
+      const response = await fetch(
+        `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=Data`
+      );
+      const text = await response.text();
+      const jsonStart = text.indexOf("{");
+      const jsonEnd = text.lastIndexOf("}");
+      const data = JSON.parse(text.substring(jsonStart, jsonEnd + 1));
+
+      const dataItems = data.table.rows.map((row, rowIndex) => {
+        const itemObj = {
+          _id: `data-${rowIndex}`,
+          _rowIndex: rowIndex + 1,
+        };
+        if (row.c) {
+          row.c.forEach((cell, i) => {
+            itemObj[`col${i}`] = cell?.v ?? cell?.f ?? "";
+          });
+        }
+        return itemObj;
+      });
+
+      setDataSheetData(dataItems);
+      return dataItems;
+    } catch (err) {
+      console.error("Error fetching Data sheet:", err);
+      return [];
+    }
+  };
 
   const fetchPendingData = async () => {
     try {
       setIsLoading(true);
       setError(null);
+
+      const dataSheetItems = await fetchDataSheet();
+
       const response = await fetch(
-        `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=data`
+        `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=For Records`
       );
       const text = await response.text();
       const jsonStart = text.indexOf("{");
@@ -54,49 +207,68 @@ const AdminPendingTasks = () => {
           _id: `${rowIndex}-${Math.random().toString(36).substr(2, 9)}`,
           _rowIndex: rowIndex + 1,
         };
+
         if (row.c) {
           row.c.forEach((cell, i) => {
             itemObj[`col${i}`] = cell?.v ?? cell?.f ?? "";
           });
         }
 
-        // Process col23 for image and name
-        const rawValue = String(itemObj.col23 || "").replace(/^"|"$/g, "");
+        // Get Link With Name data from column N (col13)
+        const linkWithNameData = itemObj.col13 ? String(itemObj.col13).trim() : "";
+
         let imageUrl = "";
         let userName = "";
 
-        if (rawValue.includes(",")) {
-          const parts = rawValue.split(/,(.+)/);
+        if (linkWithNameData.includes(",")) {
+          const parts = linkWithNameData.split(",");
           imageUrl = parts[0]?.trim() || "";
-          userName = parts[1]?.trim() || "";
-        } else if (rawValue.startsWith("http")) {
-          imageUrl = rawValue.trim();
-          userName = "";
+          userName = parts.slice(1).join(",").trim() || "";
+        } else if (linkWithNameData.startsWith("http")) {
+          imageUrl = linkWithNameData.trim();
+          userName = "User";
+        } else if (linkWithNameData.trim() !== "") {
+          imageUrl = "";
+          userName = linkWithNameData.trim();
         } else {
           imageUrl = "";
-          userName = rawValue.trim();
+          userName = "Unknown User";
         }
 
         itemObj._imageUrl = convertGoogleDriveImageUrl(imageUrl);
-        itemObj._userName = userName || "User";
-        itemObj._combinedValue = userName
-          ? `${imageUrl},${userName}`
-          : imageUrl || userName;
+        itemObj._userName = userName || "Unknown User";
+        itemObj._combinedValue = linkWithNameData;
+
+        const matchingDataItem = dataSheetItems.find(dataItem =>
+          dataItem._rowIndex === itemObj._rowIndex
+        );
+
+        if (matchingDataItem) {
+          itemObj._fmsName = String(matchingDataItem.col2 || "").trim();
+          itemObj._taskName = String(matchingDataItem.col3 || "").trim();
+        } else {
+          itemObj._fmsName = String(itemObj.col2 || "").trim();
+          itemObj._taskName = String(itemObj.col3 || "").trim();
+        }
 
         return itemObj;
       });
 
-      const filteredItems = fmsItems.filter((item) =>
-        DISPLAY_COLUMNS.some((colId) => {
+      const filteredItems = fmsItems.filter((item) => {
+        const hasDisplayData = DISPLAY_COLUMNS.some((colId) => {
           const value = item[colId];
           return value && String(value).trim() !== "";
-        })
-      );
+        });
+
+        const pendingTaskValue = parseFloat(item[PENDING_TASK_COLUMN]) || 0;
+        const hasPendingTask = pendingTaskValue > 0;
+
+        return hasDisplayData && hasPendingTask;
+      });
 
       setPendingTasks(filteredItems);
-      toast.success(`Fetched ${filteredItems.length} pending tasks`);
     } catch (err) {
-      console.error("❌ Error fetching pending data:", err);
+      console.error("Error fetching pending data:", err);
       setError(err.message);
       toast.error(`Failed to load: ${err.message}`);
     } finally {
@@ -108,7 +280,6 @@ const AdminPendingTasks = () => {
     fetchPendingData();
   }, []);
 
-  // Get unique person names with their images from col23
   const getPersonNamesWithImages = () => {
     const personMap = new Map();
 
@@ -130,11 +301,10 @@ const AdminPendingTasks = () => {
     );
   };
 
-  // Get unique FMS names
   const getFMSNames = () => {
     const fmsNames = new Set();
     pendingTasks.forEach((item) => {
-      const fmsName = String(item.col2 || "").trim();
+      const fmsName = item._fmsName || String(item.col2 || "").trim();
       if (fmsName !== "") {
         fmsNames.add(fmsName);
       }
@@ -144,13 +314,17 @@ const AdminPendingTasks = () => {
 
   const filteredTasks = pendingTasks.filter((item) => {
     const term = searchTerm.toLowerCase();
-    const matchesSearch = DISPLAY_COLUMNS.some((colId) =>
-      String(item[colId] || "")
-        .toLowerCase()
-        .includes(term)
-    );
+    const matchesSearch = DISPLAY_COLUMNS.some((colId) => {
+      if (colId === "col2") {
+        return (item._fmsName || String(item[colId] || "")).toLowerCase().includes(term);
+      } else if (colId === "col3") {
+        return (item._taskName || String(item[colId] || "")).toLowerCase().includes(term);
+      } else {
+        return String(item[colId] || "").toLowerCase().includes(term);
+      }
+    });
     const matchesFilter = filterValue
-      ? item._combinedValue === filterValue
+      ? (filterType === "col2" ? (item._fmsName === filterValue) : item._combinedValue === filterValue)
       : true;
     return matchesSearch && matchesFilter;
   });
@@ -166,69 +340,48 @@ const AdminPendingTasks = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4" style={{ height: "calc(110vh - 90px)", marginTop: "-40px" }}>
       <Toaster />
 
-      {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center pt-2">
         <h1 className="text-2xl font-bold text-gray-800">Pending Tasks</h1>
-        <div className="text-sm bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full">
+        <div className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-full">
           {filteredTasks.length} Pending Task
-          {filteredTasks.length !== 1 ? "s" : ""}
+          {filteredTasks.length !== 1 ? "s" : ""} (> 0)
         </div>
       </div>
 
-      {/* Search + Inline Filter */}
-      <div className="bg-white p-4 rounded border space-y-4">
-        <div className="grid md:grid-cols-3 gap-4">
-          {/* Search Input */}
+      <div className="bg-white p-3 rounded border space-y-3">
+        <div className="grid md:grid-cols-3 gap-3">
           <input
             type="text"
             placeholder="Search..."
-            className="px-3 py-2 border rounded-md w-full max-w-xs focus:ring-green-500"
+            className="px-3 py-2 border rounded-md w-full max-w-xs focus:ring-red-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
 
-          {/* Custom Person Dropdown */}
           <div className="relative">
             <div
-              className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500 bg-white cursor-pointer flex justify-between items-center"
+              className="border px-3 py-2 rounded w-full focus:ring-red-500 focus:border-red-500 bg-white cursor-pointer flex justify-between items-center"
               onClick={() => setShowPersonDropdown(!showPersonDropdown)}
             >
               {selectedPerson ? (
                 <div className="flex items-center">
-                  {selectedPerson.imageUrl ? (
-                    <img
-                      src={selectedPerson.imageUrl}
-                      alt={selectedPerson.displayName}
-                      className="w-6 h-6 rounded-full mr-2 object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "";
-                        e.target.className =
-                          "w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center";
-                        e.target.innerHTML = `<span class="text-xs">${
-                          selectedPerson.displayName?.charAt(0) || "?"
-                        }</span>`;
-                      }}
-                    />
-                  ) : (
-                    <div className="w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center">
-                      <span className="text-xs">
-                        {selectedPerson.displayName?.charAt(0) || "?"}
-                      </span>
-                    </div>
-                  )}
-                  <span>{selectedPerson.displayName}</span>
+                  <Avatar
+                    imageUrl={selectedPerson.imageUrl}
+                    userName={selectedPerson.displayName}
+                    size="w-12 h-12"
+                  />
+
+                  <span className="ml-2">{selectedPerson.displayName}</span>
                 </div>
               ) : (
                 <span>All Persons</span>
               )}
               <svg
-                className={`w-4 h-4 ml-2 transition-transform ${
-                  showPersonDropdown ? "rotate-180" : ""
-                }`}
+                className={`w-4 h-4 ml-2 transition-transform ${showPersonDropdown ? "rotate-180" : ""
+                  }`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -244,7 +397,7 @@ const AdminPendingTasks = () => {
             </div>
 
             {showPersonDropdown && (
-              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                 <div
                   className="p-2 hover:bg-gray-100 cursor-pointer"
                   onClick={() =>
@@ -262,36 +415,18 @@ const AdminPendingTasks = () => {
                     className="p-2 hover:bg-gray-100 cursor-pointer flex items-center"
                     onClick={() => handlePersonSelect(person)}
                   >
-                    {person.imageUrl ? (
-                      <img
-                        src={person.imageUrl}
-                        alt={person.displayName}
-                        className="w-6 h-6 rounded-full mr-2 object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "";
-                          e.target.className =
-                            "w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center";
-                          e.target.innerHTML = `<span class="text-xs">${
-                            person.displayName?.charAt(0) || "?"
-                          }</span>`;
-                        }}
-                      />
-                    ) : (
-                      <div className="w-6 h-6 bg-gray-200 rounded-full mr-2 flex items-center justify-center">
-                        <span className="text-sm">
-                          {person.displayName?.charAt(0) || "?"}
-                        </span>
-                      </div>
-                    )}
-                    <span>{person.displayName}</span>
+                    <Avatar
+                      imageUrl={person.imageUrl}
+                      userName={person.displayName}
+                      size="w-9 h-9"
+                    />
+                    <span className="ml-2">{person.displayName}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* FMS Name Dropdown */}
           <div>
             <select
               value={filterType === "col2" ? filterValue : ""}
@@ -299,7 +434,7 @@ const AdminPendingTasks = () => {
                 setFilterType("col2");
                 setFilterValue(e.target.value);
               }}
-              className="border px-3 py-2 rounded w-full focus:ring-green-500 focus:border-green-500"
+              className="border px-3 py-2 rounded w-full focus:ring-red-500 focus:border-red-500"
             >
               <option value="">All FMS Names</option>
               {getFMSNames().map((fmsName) => (
@@ -312,39 +447,35 @@ const AdminPendingTasks = () => {
         </div>
       </div>
 
-      {/* Tasks Table */}
       {isLoading ? (
         <div className="bg-white rounded-lg border shadow-sm p-6 text-center">
-          <p className="text-gray-500">Loading tasks...</p>
+          <div className="flex items-center justify-center space-x-2">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-red-500"></div>
+            <p className="text-gray-500">Loading tasks...</p>
+          </div>
         </div>
       ) : error ? (
         <div className="bg-white rounded-lg border shadow-sm p-6 text-center">
           <p className="text-red-500">Error: {error}</p>
           <button
             onClick={fetchPendingData}
-            className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
           >
             Retry
           </button>
         </div>
       ) : filteredTasks.length > 0 ? (
-        <div className="bg-white rounded-lg border shadow-sm p-6">
-          <div className="mb-4">
+        <div className="bg-white rounded-lg border shadow-sm p-4">
+          <div className="mb-3">
             <h2 className="text-lg font-semibold text-gray-800">
               {filterValue
-                ? `Showing ${filterType === "col2" ? "FMS Name" : "Person"}: ${
-                    selectedPerson?.displayName || filterValue
-                  }`
+                ? `Showing ${filterType === "col2" ? "FMS Name" : "Person"}: ${selectedPerson?.displayName || filterValue
+                }`
                 : "All Tasks"}
             </h2>
-            <p className="text-sm text-gray-500">
-              {filterValue
-                ? "Filtered tasks based on your selected criteria."
-                : "Showing all available tasks."}
-            </p>
           </div>
-          <div className="h-[calc(100vh-280px)] overflow-hidden">
-            <TasksTable
+          <div className="h-[calc(100vh-270px)] overflow-hidden">
+            <PendingTasksTable
               isCompact={true}
               filterTasks={filteredTasks}
               type="pending"
@@ -353,7 +484,12 @@ const AdminPendingTasks = () => {
         </div>
       ) : (
         <div className="bg-white rounded-lg border shadow-sm p-6 text-center">
-          <p className="text-gray-500">No tasks match your current filters.</p>
+          <div className="flex flex-col items-center space-y-3">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+              <User className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500">No tasks with Pending Task > 0 match your current filters.</p>
+          </div>
         </div>
       )}
     </div>
