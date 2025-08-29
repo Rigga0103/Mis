@@ -204,7 +204,7 @@ useEffect(() => {
     try {
       console.log('Making API call to Google Sheets...');
       const response = await fetch(
-        'https://script.google.com/macros/s/AKfycbyPoL6hYB-p5ILB0s02lgzFXK_C0BJx7VD2qeingxhkgqHCt64yMgAAPw4jmPCq_0g1/exec',
+        'https://script.google.com/macros/s/AKfycbz6v_u383UiNmzJUG_VumT8Lq2gMPBxeZWAwtJas_K8ST7QwilMDu6YWuAqZNPbJxkF/exec',
         {
           method: 'GET',
           headers: {

@@ -146,8 +146,8 @@ const processImageUrl = (rawImageData) => {
 };
 
 // Auto designation submit configuration
-const SUBMIT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxf0N7THEB3Sj_7O0Gf9Gpa-2RAxoEymLNcFPnX6O6OcH8RWvDZiwZIWrODEk-wwDMtBA/exec";
-const SUBMIT_SHEET_ID = "1GHb1qDJ1ZaUFzIrb1ezXqYd-6ePFAAe4upYotiP92JY";
+const SUBMIT_GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwS2OWy5R3Tlst1Q5ulXGK9bYehR2xtdfP_nGT9mDfAO5G6if0NmRUVbofzECpq5AK_Ng/exec";
+const SUBMIT_SHEET_ID = "1NuVFSLuUiOrcdfD2ISsmUh8PRV_IJUU_AyZDZiN11iY";
 const SUBMIT_SHEET_NAME = "Dashboard";
 const HEADER_NAME = "PERCHASER";
 
@@ -195,7 +195,7 @@ export function AuthProvider({ children }) {
       console.log("🔍 AuthContext: Fetching image from For Record sheet for Master user:", masterSheetName);
       
       // Simplified approach - just try direct fetch first
-      const baseUrl = "https://script.google.com/macros/s/AKfycbyPoL6hYB-p5ILB0s02lgzFXK_C0BJx7VD2qeingxhkgqHCt64yMgAAPw4jmPCq_0g1/exec";
+      const baseUrl = "https://script.google.com/macros/s/AKfycbz6v_u383UiNmzJUG_VumT8Lq2gMPBxeZWAwtJas_K8ST7QwilMDu6YWuAqZNPbJxkF/exec";
       
       try {
         console.log("🔄 AuthContext: Trying direct fetch");

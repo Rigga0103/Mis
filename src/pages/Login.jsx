@@ -74,7 +74,7 @@ const LoginPage = () => {
 
     try {
       // 1. Fetch authentication data from Master sheet
-      const sheetId = "1N2u0i7VDR4XRtNlb8_IulnUOCQO9Als5jLzo3ykEf9c";
+      const sheetId = "1PV7EKhdGns0Xl9nh4lgZqWTIWXGaFzpSxC2hGA2IB_w";
       const sheetName = "Master";
       const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
 
@@ -122,7 +122,7 @@ const LoginPage = () => {
         let processedImageUrl = null;
         
         try {
-          const perfSheetId = "1N2u0i7VDR4XRtNlb8_IulnUOCQO9Als5jLzo3ykEf9c";
+          const perfSheetId = "1PV7EKhdGns0Xl9nh4lgZqWTIWXGaFzpSxC2hGA2IB_w";
           const perfUrl = `https://docs.google.com/spreadsheets/d/${perfSheetId}/gviz/tq?tqx=out:json&sheet=For%20Records`;
           
           const perfResponse = await fetch(perfUrl);

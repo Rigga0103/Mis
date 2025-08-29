@@ -10,7 +10,7 @@ const KpikraTable = ({ designation, isAdmin = false, isEmpty = false }) => {
   const abortControllerRef = useRef(null);
 
   // Update with your new spreadsheet ID and sheet name
-  const SPREADSHEET_ID = "1GHb1qDJ1ZaUFzIrb1ezXqYd-6ePFAAe4upYotiP92JY";
+  const SPREADSHEET_ID = "1NuVFSLuUiOrcdfD2ISsmUh8PRV_IJUU_AyZDZiN11iY";
   const SHEET_NAME = "Dashboard"; // Fixed sheet name - change this to your actual sheet name
 
   const fetchPendingData = useCallback(async (designationToFetch) => {

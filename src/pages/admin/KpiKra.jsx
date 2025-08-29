@@ -33,8 +33,8 @@ const KpiKra = () => {
   const updateGoogleSheet = async (designation) => {
     try {
       // Method 1: Try with JSONP callback (works better with Google Apps Script)
-      const scriptUrl = "https://script.google.com/macros/s/AKfycbxf0N7THEB3Sj_7O0Gf9Gpa-2RAxoEymLNcFPnX6O6OcH8RWvDZiwZIWrODEk-wwDMtBA/exec";
-      
+      const scriptUrl = "https://script.google.com/macros/s/AKfycbwS2OWy5R3Tlst1Q5ulXGK9bYehR2xtdfP_nGT9mDfAO5G6if0NmRUVbofzECpq5AK_Ng/exec";
+
       // Create form data for POST request
       const params = new URLSearchParams();
       params.append("action", "updateCell");
@@ -59,12 +59,12 @@ const KpiKra = () => {
 
     } catch (error) {
       console.warn("Primary method failed, trying alternative:", error);
-      
+
       // Method 2: Try with CORS proxy service
       try {
         const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-        const scriptUrl = "https://script.google.com/macros/s/AKfycbxf0N7THEB3Sj_7O0Gf9Gpa-2RAxoEymLNcFPnX6O6OcH8RWvDZiwZIWrODEk-wwDMtBA/exec";
-        
+        const scriptUrl = "https://script.google.com/macros/s/AKfycbwS2OWy5R3Tlst1Q5ulXGK9bYehR2xtdfP_nGT9mDfAO5G6if0NmRUVbofzECpq5AK_Ng/exec";
+
         const params = new URLSearchParams();
         params.append("action", "updateCell");
         params.append("sheetName", "Dashboard");
@@ -85,24 +85,24 @@ const KpiKra = () => {
           const result = await response.json();
           return result;
         }
-        
+
         throw new Error("Proxy method failed");
       } catch (proxyError) {
         console.warn("Proxy method also failed:", proxyError);
-        
+
         // Method 3: Use dynamic script tag (JSONP-style)
         return new Promise((resolve) => {
           const callbackName = `jsonp_callback_${Date.now()}`;
-          const scriptUrl = `https://script.google.com/macros/s/AKfycbxf0N7THEB3Sj_7O0Gf9Gpa-2RAxoEymLNcFPnX6O6OcH8RWvDZiwZIWrODEk-wwDMtBA/exec?action=updateCell&sheetName=Dashboard&row=2&column=1&value=${encodeURIComponent(designation)}&callback=${callbackName}`;
-          
+          const scriptUrl = `https://script.google.com/macros/s/AKfycbwS2OWy5R3Tlst1Q5ulXGK9bYehR2xtdfP_nGT9mDfAO5G6if0NmRUVbofzECpq5AK_Ng/exec?action=updateCell&sheetName=Dashboard&row=2&column=1&value=${encodeURIComponent(designation)}&callback=${callbackName}`;
+
           // Create callback function
-          window[callbackName] = function(data) {
+          window[callbackName] = function (data) {
             resolve(data);
             // Cleanup
             document.head.removeChild(script);
             delete window[callbackName];
           };
-          
+
           // Create script tag
           const script = document.createElement('script');
           script.src = scriptUrl;
@@ -111,9 +111,9 @@ const KpiKra = () => {
             document.head.removeChild(script);
             delete window[callbackName];
           };
-          
+
           document.head.appendChild(script);
-          
+
           // Timeout after 10 seconds
           setTimeout(() => {
             if (window[callbackName]) {
@@ -139,9 +139,24 @@ const KpiKra = () => {
       if (user.role === "admin") {
         // Only admins update the global designation
         const result = await updateGoogleSheet(newDesignation);
-        
+
         if (result && result.success !== false) {
-          setSubmitMessage("✅ Selection saved successfully!");
+          {/* Message Display */ }
+          {
+            submitMessage && (
+              <p
+                className={`mt-2 text-sm ${submitMessage.includes("✅")
+                    ? "text-black"       // success message black
+                    : submitMessage.includes("⚠️")
+                      ? "text-yellow-600"  // warning message
+                      : "text-gray-600"    // loading or default
+                  }`}
+              >
+                {submitMessage}
+              </p>
+            )
+          }
+
         } else {
           // Even if update fails, continue with local state update
           setSubmitMessage("⚠️ Selection updated locally (server update may have failed)");
@@ -173,7 +188,7 @@ const KpiKra = () => {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-    
+
       {/* KPI & KRA Header & Dropdown */}
       <div className="flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-xl shadow-sm">
         <div>
@@ -182,7 +197,7 @@ const KpiKra = () => {
             {user?.role === "admin" ? "Admin View" : "Your Performance Metrics"}
           </p>
         </div>
-        
+
         {availableDesignations.length > 0 && (
           <div className="relative">
             <select
