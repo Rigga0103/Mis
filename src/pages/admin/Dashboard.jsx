@@ -52,7 +52,7 @@ const AdminDashboard = () => {
   ];
   const SPREADSHEET_ID = "1PV7EKhdGns0Xl9nh4lgZqWTIWXGaFzpSxC2hGA2IB_w";
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz6v_u383UiNmzJUG_VumT8Lq2gMPBxeZWAwtJas_K8ST7QwilMDu6YWuAqZNPbJxkF/exec";
-  const DEPARTMENT_CHART_ID = "438114571";
+  const DEPARTMENT_CHART_ID = "1932717403";
 
   // Generate the department chart URL
   useEffect(() => {
@@ -417,7 +417,7 @@ const AdminDashboard = () => {
         <h2 className="text-lg font-semibold text-gray-800 mb-4">Department Scores</h2>
         <div className="h-[500px] w-full overflow-hidden rounded-lg border border-gray-200">
           <iframe
-            src={`https://docs.google.com/spreadsheets/d/e/2PACX-1vST3ZGx9bH09qLP2B0a1UcwrTa-et8mYdFiAqRD7-eJDztl-JLfRgjPG8p_glgh7AoJXHchqNGwmQY2/pubchart?oid=1932717403&format=interactive`}
+            src={`https://docs.google.com/spreadsheets/d/e/2PACX-1vQXxVx1Rh0dhrvuralV6_E8ckP2VWfsJ30vZiZAxNkJovbUYb0LrbXlGd7a5yxOavXwUsQwl0sShdi_/pubchart?oid=1932717403&amp;format=interactive`}
             width="100%"
             height="100%"
             frameBorder="0"

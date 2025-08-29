@@ -1194,7 +1194,7 @@ doc.text('Department Scores', margin, yPosition);
 
     try {
       const DEPARTMENT_CHART_ID = '1932717403';
-      const chartImageUrl = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSQtDrMCDFJJytZB4DX_hOp8vsbagvAQdkeAa1PfFYSgwVGAD5ZAGqVze3LjGntrk40eQ8WNmK5D_Cc/pubchart?oid=${DEPARTMENT_CHART_ID}&format=image`;
+      const chartImageUrl = `https://docs.google.com/spreadsheets/d/e/2PACX-1vST3ZGx9bH09qLP2B0a1UcwrTa-et8mYdFiAqRD7-eJDztl-JLfRgjPG8p_glgh7AoJXHchqNGwmQY2/pubchart?oid=${DEPARTMENT_CHART_ID}&format=image`;
 
       const chartImage = await new Promise((resolve, reject) => {
         const img = new Image();
